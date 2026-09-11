@@ -84,7 +84,9 @@ read-only `GET /api/data`) plus your own clicks:
 | All done for the day | `.cared` sparkles, end-of-day line, then he sleeps |
 
 Assumed per session, not daily total; one config flag flips it. Resets at
-midnight. Mood drifts: cared for = `.mood-bright`, ignored = `.mood-sleepy`
+midnight. Survives a quit or crash: care progress, mood timestamp and today's
+shown affirmations persist to disk (userData/tort-state.json, atomic writes,
+falls back to a fresh day on a missing or corrupt file). Mood drifts: cared for = `.mood-bright`, ignored = `.mood-sleepy`
 (lids droop). Affirmations at 09:00, 13:00 and 18:00, one bank per slot (starting, enduring, stopping). Web version
 on a public link. X launch post. No nagging anywhere.
 
@@ -92,4 +94,3 @@ on a public link. X launch post. No nagging anywhere.
 
 - Talking pet with a Claude API call in the bubble
 - Web version and App Launcher tile
-- Feeding, moods, personality that drifts over the day

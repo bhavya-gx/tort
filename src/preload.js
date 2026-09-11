@@ -11,5 +11,7 @@ contextBridge.exposeInMainWorld('pet', {
   onSnooze: (fn) => on('pet:snooze', fn),
   onWake: (fn) => on('pet:wake', fn),
   onResized: (fn) => on('pet:resized', fn),
-  onReward: (fn) => on('pet:reward', fn)
+  onReward: (fn) => on('pet:reward', fn),
+  loadState: () => ipcRenderer.invoke('pet:loadState'),
+  saveState: (data) => ipcRenderer.send('pet:saveState', data)
 })

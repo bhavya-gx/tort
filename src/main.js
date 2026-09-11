@@ -1,9 +1,46 @@
 const { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, globalShortcut } = require('electron')
 const path = require('path')
+const fs = require('fs')
 
 let win = null
 let tray = null
 let snoozeTimer = null
+
+/* Care-loop state (petted/studied/walked, mood timestamp, affirmations seen
+   today) survives a quit or a crash. The renderer is the source of truth
+   while running; main just persists whatever it's told, atomically, so a
+   crash mid-write never leaves a half-written file behind. */
+const STATE_FILE = path.join(app.getPath('userData'), 'tort-state.json')
+let saveTimer = null
+let pendingState = null
+
+function loadState () {
+  try {
+    return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'))
+  } catch (e) {
+    return null // missing, or corrupt: renderer falls back to a fresh day
+  }
+}
+
+function writeStateNow () {
+  const data = pendingState
+  pendingState = null
+  if (!data) return
+  try {
+    const tmp = `${STATE_FILE}.tmp`
+    fs.writeFileSync(tmp, JSON.stringify(data))
+    fs.renameSync(tmp, STATE_FILE) // rename is atomic, no half-written file on crash
+  } catch (e) {
+    // Disk full, permissions, whatever. Ambient app, no error surface;
+    // next successful save catches it back up.
+  }
+}
+
+function saveState (data) {
+  pendingState = data
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(writeStateNow, 800)
+}
 
 /* Study tracker hook. Read-only, GET only, never writes back to the tracker.
    Settings live in renderer/config.js (STUDY) so there is one source of
@@ -170,7 +207,14 @@ app.whenReady().then(async () => {
 // The renderer owns the whole lifetime. Closing all windows should not quit,
 // but there is only one window, so treat its loss as a quit.
 app.on('window-all-closed', () => app.quit())
-app.on('will-quit', () => globalShortcut.unregisterAll())
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
+  clearTimeout(saveTimer)
+  writeStateNow() // flush a pending debounced save rather than lose it on quit
+})
+
+ipcMain.handle('pet:loadState', () => loadState())
+ipcMain.on('pet:saveState', (_e, data) => saveState(data))
 
 // Double-click to vanish for a screenshot. Bring him back with Ctrl+Alt+P,
 // or any tray item (they all call reveal first). Same as a snooze, with no

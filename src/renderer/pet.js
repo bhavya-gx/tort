@@ -49,6 +49,19 @@ function localDay (d = new Date()) {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
 }
 
+/* Persists after every care-state change (a pet, a reward, an affirmation, a
+   midnight reset) so quitting mid-day doesn't erase the day's progress. Main
+   process debounces and writes atomically; this just hands it the slice of
+   state worth remembering. */
+function persist () {
+  window.pet.saveState({
+    day: state.day,
+    care: state.care,
+    lastCaredAt: state.lastCaredAt,
+    affirmedToday: [...state.affirmedToday]
+  })
+}
+
 let bounds = { w: window.innerWidth, h: window.innerHeight }
 
 function measure () {
@@ -159,6 +172,7 @@ function markCare (task) {
     el.pet.classList.add('cared')
     say(LINES.cared, 5000)
   }
+  persist()
 }
 
 /* Study rewards arrive one at a time from main.js as sessions are logged.
@@ -261,6 +275,7 @@ function checkAffirmations () {
       const due = minutesOfDay(slot)
       if (nowMins < due) continue
       state.affirmedToday.add(slot)
+      persist()
       if ((nowMins - due) * 60000 <= AFFIRMATION_GRACE_MS) {
         say(pick(lines), 5500)
         break // one line at a time, never a backlog dump
@@ -279,6 +294,7 @@ function checkMidnight () {
     state.care = { petted: false, studied: false, walked: false, done: false }
     state.affirmedToday = new Set()
     el.pet.classList.remove('cared', 'shiny')
+    persist()
   }
   schedule(checkMidnight, 60000, 60000)
 }
@@ -416,6 +432,25 @@ window.addEventListener('load', measure) // re-measure once layout is definitely
 
 /* ---------- boot ---------- */
 
+/* Restores yesterday's or this morning's care progress before anything else
+   runs, so a restart mid-day does not wipe pet/feed/walk or replay an
+   affirmation already shown. A saved day that is not today is discarded
+   outright: state.care already defaults to the fresh-day shape above. */
+async function restoreState () {
+  let saved = null
+  try {
+    saved = await window.pet.loadState()
+  } catch (e) {
+    // main process couldn't load it; run as a fresh day rather than block boot
+  }
+  if (saved && saved.day === state.day) {
+    state.care = { petted: false, studied: false, walked: false, done: false, ...saved.care }
+    state.lastCaredAt = saved.lastCaredAt || 0
+    state.affirmedToday = new Set(Array.isArray(saved.affirmedToday) ? saved.affirmedToday : [])
+    if (state.care.done) el.pet.classList.add('cared')
+  }
+}
+
 state.x = clamp(bounds.w * 0.72)
 el.pet.dataset.facing = 'left'
 draw()
@@ -426,6 +461,7 @@ schedule(ambient, 90000, 150000)
 schedule(blink, ...MOTION.blink)
 schedule(checkIdle, 30000, 30000)
 schedule(updateMood, 60000, 60000)
-schedule(checkAffirmations, 30000, 30000)
 schedule(checkMidnight, 60000, 60000)
 setTimeout(() => say(LINES.hello, 5000), 1200)
+
+restoreState().finally(() => schedule(checkAffirmations, 0, 0))
