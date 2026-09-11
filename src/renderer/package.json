@@ -1,0 +1,4 @@
+{
+  "type": "module",
+  "comment": "Marks this directory as ES modules so both the browser <script type=module> tags AND main.js's dynamic import() of config.js parse it the same way. Without this, Electron's main process loads .js via the CJS loader and 'export const' throws."
+}

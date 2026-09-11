@@ -1,0 +1,14 @@
+{
+  "name": "desktop-pet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A tiny companion that lives on your desktop.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node tools/make-tray-icon.js"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0"
+  }
+}
