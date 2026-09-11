@@ -1,8 +1,8 @@
 # Tort, desktop pet
 
-A small turtle that lives on top of everything on the screen, wanders slowly along
-the bottom of the display, and checks in now and then. Mac only. No account, no
-network, no data leaves the machine.
+A small turtle that lives on top of everything on the screen, sits in one spot
+until you click him, then plods somewhere new along the bottom of the display.
+Mac only. No account, no network, no data leaves the machine.
 
 Rename in one place: `NAME` in `src/renderer/config.js`.
 Name locked: Tort.
@@ -20,9 +20,9 @@ speak. "slow is fine." not "You've got this, superstar!"
 
 | Trigger | What happens |
 |---|---|
-| Every 25 to 60 s | Picks a new spot along the bottom, plods there, flips to face the way it walks |
+| Default | Sits in one spot. No autonomous wandering |
 | Every 5 to 8 min | Speech bubble with one ambient line, fades after 4 s |
-| Click it | Squash and bounce, hearts float up, short reaction line |
+| Click it | Squash and bounce, hearts float up, short reaction line, then plods to a new spot along the bottom |
 | Ctrl+Alt+P, or menu bar "Come here" | Walks to your cursor, then speaks |
 | 12 min with no mouse movement | Tucks into shell, sleeps, says zzz |
 | Mouse moves again | Wakes, one wake line |

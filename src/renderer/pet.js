@@ -114,10 +114,12 @@ function frame (now) {
   requestAnimationFrame(frame)
 }
 
-function wander () {
-  if (state.paused || state.asleep || state.dragging) return schedule(wander, ...MOTION.wander)
+/* He sits still by default now. A click is what sends him crawling to a new
+   spot, not a timer. crawl() picks the new spot; wander() no longer runs on
+   its own, kept only as the thing a click triggers. */
+function crawl () {
+  if (state.paused || state.asleep || state.dragging) return
   walkTo(rand(EDGE, bounds.w - WIDTH - EDGE))
-  schedule(wander, ...MOTION.wander)
 }
 
 /* ---------- speech ---------- */
@@ -159,7 +161,7 @@ function celebrate () {
     el.hearts.appendChild(heart)
     setTimeout(() => heart.remove(), 1400)
   }
-  setTimeout(() => { if (state.mode === 'happy') setMode('idle') }, 900)
+  setTimeout(() => { if (state.mode === 'happy') crawl() }, 900)
 }
 
 /* ---------- daily care loop ---------- */
@@ -456,7 +458,6 @@ el.pet.dataset.facing = 'left'
 draw()
 requestAnimationFrame(frame)
 
-schedule(wander, 15000, 25000)
 schedule(ambient, 90000, 150000)
 schedule(blink, ...MOTION.blink)
 schedule(checkIdle, 30000, 30000)
