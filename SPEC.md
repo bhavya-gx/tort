@@ -29,6 +29,7 @@ speak. "slow is fine." not "You've got this, superstar!"
 | Menu bar | Come here, Say something, Snooze 30 or 60, Show Tort, Quit |
 | Click and drag | Reposition him anywhere along the bottom |
 | Double-click | Vanishes for a screenshot. Ctrl+Alt+P, or any tray item, brings him back |
+| Drag the leaf (bottom-right corner) onto him | Feeds him, any time, not gated by a study session and not part of the daily checklist |
 
 Click-through everywhere except the sprite itself, so it never blocks a click on
 whatever is underneath. Floats above fullscreen apps. No Dock icon.
