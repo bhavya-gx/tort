@@ -8,7 +8,9 @@ const el = {
   hearts: document.getElementById('hearts'),
   leaf: document.getElementById('leaf'),
   water: document.getElementById('water'),
-  bubbles: document.getElementById('bubbles')
+  bubbles: document.getElementById('bubbles'),
+  leafTray: document.getElementById('leafTray'),
+  leafGhost: document.getElementById('leafGhost')
 }
 
 el.sprite.innerHTML = sprite
@@ -42,8 +44,12 @@ const state = {
   dragging: false,
   dragMoved: false,
   dragStartX: 0,
-  dragLastX: 0
+  dragLastX: 0,
+  // Dragging the leaf from its tray onto him
+  leafDragging: false
 }
+
+const LEAF_TRAY = { size: 44, margin: 16 }
 
 function localDay (d = new Date()) {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
@@ -177,24 +183,12 @@ function markCare (task) {
   persist()
 }
 
-/* Study rewards arrive one at a time from main.js as sessions are logged.
-   They queue so two logged in the same poll play back to back instead of
-   stomping each other. */
-const rewardQueue = []
-let playingReward = false
-
-function queueReward (tier) {
-  rewardQueue.push(tier)
-  if (!playingReward) playNextReward()
-}
-
-async function playNextReward () {
-  const tier = rewardQueue.shift()
-  if (!tier) { playingReward = false; return }
-  playingReward = true
-  wake()
-  markCare('studied')
-
+/* The visuals for a reward tier, kept separate from what earns it. A real
+   study session (playNextReward, below) marks the daily 'studied' task on
+   top of this. Dragging the leaf onto him by hand (feedManually, further
+   down) plays the exact same 'fed' animation but never touches care state,
+   it's affection, not something he's tracking. */
+async function playTierAnimation (tier) {
   if (tier === 'water') {
     el.water.innerHTML = water
     el.water.classList.remove('gone')
@@ -231,9 +225,37 @@ async function playNextReward () {
     el.pet.classList.remove('cleaning')
     el.pet.classList.add('shiny')
   }
+}
 
+/* Study rewards arrive one at a time from main.js as sessions are logged.
+   They queue so two logged in the same poll play back to back instead of
+   stomping each other. */
+const rewardQueue = []
+let playingReward = false
+
+function queueReward (tier) {
+  rewardQueue.push(tier)
+  if (!playingReward) playNextReward()
+}
+
+async function playNextReward () {
+  const tier = rewardQueue.shift()
+  if (!tier) { playingReward = false; return }
+  playingReward = true
+  wake()
+  markCare('studied')
+  await playTierAnimation(tier)
   await wait(400)
   playNextReward()
+}
+
+/* Feeding him by hand, any time, not gated by a study session and not part
+   of the daily care checklist. Skips if a study reward is mid-animation so
+   the two never overlap on the same sprite classes. */
+async function feedManually () {
+  if (playingReward || state.paused || state.asleep) return
+  wake()
+  await playTierAnimation('fed')
 }
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -334,15 +356,23 @@ function wake () {
 
 /* ---------- hover and clicks ---------- */
 
+function overLeafTray (x, y) {
+  const left = bounds.w - LEAF_TRAY.margin - LEAF_TRAY.size
+  const top = bounds.h - LEAF_TRAY.margin - LEAF_TRAY.size
+  return x >= left && x <= left + LEAF_TRAY.size && y >= top && y <= bounds.h - LEAF_TRAY.margin
+}
+
 function updateHover () {
-  // While dragging, keep the window interactive regardless of where the
-  // cursor drifts. It only entered drag with the cursor over the sprite in
-  // the first place, and a drag can carry the cursor above the pet's strip.
-  if (state.dragging) return
+  // While dragging the pet or the leaf, keep the window interactive
+  // regardless of where the cursor drifts. It only entered a drag with the
+  // cursor over an interactive element in the first place, and either drag
+  // can carry the cursor away from that element's own strip.
+  if (state.dragging || state.leafDragging) return
   const { x, y } = state.cursor
   if (x < 0) return
   const top = bounds.h - HEIGHT
-  const over = x >= state.x && x <= state.x + WIDTH && y >= top && y <= bounds.h
+  const overPet = x >= state.x && x <= state.x + WIDTH && y >= top && y <= bounds.h
+  const over = overPet || overLeafTray(x, y)
   if (over !== state.interactive) {
     state.interactive = over
     window.pet.setInteractive(over)
@@ -405,6 +435,36 @@ window.addEventListener('mouseup', () => {
   }
   lastClickAt = now
   celebrate() // a single click
+})
+
+/* ---------- feed by dragging the leaf onto him ---------- */
+
+function moveLeafGhost (x, y) {
+  el.leafGhost.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`
+}
+
+el.leafTray.addEventListener('mousedown', (e) => {
+  state.leafDragging = true
+  window.pet.setInteractive(true)
+  el.leafTray.classList.add('dimmed')
+  el.leafGhost.classList.add('show')
+  moveLeafGhost(e.clientX, e.clientY)
+  e.preventDefault()
+})
+
+window.addEventListener('mousemove', (e) => {
+  if (!state.leafDragging) return
+  moveLeafGhost(e.clientX, e.clientY)
+})
+
+window.addEventListener('mouseup', (e) => {
+  if (!state.leafDragging) return
+  state.leafDragging = false
+  el.leafTray.classList.remove('dimmed')
+  el.leafGhost.classList.remove('show')
+  const top = bounds.h - HEIGHT
+  const droppedOnHim = e.clientX >= state.x && e.clientX <= state.x + WIDTH && e.clientY >= top && e.clientY <= bounds.h
+  if (droppedOnHim) feedManually()
 })
 
 /* ---------- scheduling helper ---------- */
