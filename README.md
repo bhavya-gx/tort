@@ -25,3 +25,15 @@ Quit from the turtle icon in the menu bar. There is no Dock icon.
 - Unsigned, so a build handed to anyone else needs right-click then Open the
   first time. Running it from source as above does not.
 - No network calls. Nothing is stored.
+
+## Web demo
+
+A browser port (no Electron, bounded to a card instead of your whole screen) lives in
+https://github.com/bhavya-gx/tort-web and runs at https://tort-webvercelapp.vercel.app.
+A browser tab cannot float over your desktop, so the web version is a demo, this app is the product.
+
+## Demo video pipeline
+
+`tools/mockup/` records the product video from the real web build (see its README). Renders land in `tools/mockup/out/`, which is not committed.
+
+MIT licensed.

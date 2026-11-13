@@ -1,7 +1,6 @@
 {
-  "name": "desktop-pet",
+  "name": "tort",
   "version": "0.1.0",
-  "private": true,
   "description": "A tiny companion that lives on your desktop.",
   "main": "src/main.js",
   "scripts": {
@@ -10,5 +9,10 @@
   },
   "devDependencies": {
     "electron": "^33.2.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bhavya-gx/tort.git"
   }
 }

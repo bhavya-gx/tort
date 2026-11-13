@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>tort stage</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet" />
+
+<!-- The real web build's stylesheet. Everything below only overrides layout,
+     never the character: his sprite, states and animations come from here. -->
+<link rel="stylesheet" href="/style.css" />
+
+<style>
+  /* ---------- the 1080x1920 canvas ---------- */
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    width: 1080px; height: 1920px;
+    overflow: hidden;
+    background: #FFFFFF;
+    font-family: "Poppins", system-ui, -apple-system, sans-serif;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background: radial-gradient(ellipse 70% 46% at 50% 46%, #F6F3EC 0%, #FFFFFF 72%);
+  }
+
+  /* the demo page's own chrome, kept in the DOM because pet-web.js binds to
+     these buttons on boot, but parked off canvas */
+  .offstage { position: absolute !important; left: -9999px !important; top: 0 !important; }
+
+  /* ---------- the MacBook ---------- */
+
+  #laptop {
+    position: absolute;
+    left: 50%; top: 560px;
+    transform: translateX(-50%);
+  }
+  #lid {
+    position: relative;
+    width: 1046px;
+    padding: 18px 19px 36px;
+    border-radius: 26px 26px 10px 10px;
+    background: linear-gradient(174deg, #E5E6E9 0%, #D2D4D9 46%, #BFC2C8 100%);
+    box-shadow:
+      0 2px 0 rgba(255,255,255,0.85) inset,
+      0 -1px 0 rgba(120,124,132,0.5) inset,
+      0 42px 70px rgba(60, 56, 48, 0.20),
+      0 10px 24px rgba(60, 56, 48, 0.12);
+  }
+  #notch {
+    position: absolute; left: 50%; top: 15px; transform: translateX(-50%);
+    width: 152px; height: 16px;
+    background: #15161A;
+    border-radius: 0 0 8px 8px;
+    z-index: 6;
+  }
+  #chinmark {
+    position: absolute; left: 0; right: 0; bottom: 11px;
+    text-align: center;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.14em;
+    color: #9DA1A9;
+  }
+
+  /* ---------- the screen. This IS #stage, Tort's world ---------- */
+
+  #stage {
+    position: relative;
+    width: 1008px;
+    height: 630px;
+    margin: 0;
+    border-radius: 5px;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 86% at 16% 4%, #8E86C8 0%, transparent 56%),
+      radial-gradient(108% 74% at 94% 98%, #D9899F 0%, transparent 54%),
+      linear-gradient(166deg, #4C4F92 0%, #6C67A6 44%, #9A7BA4 100%);
+    box-shadow: none;
+    cursor: none;
+  }
+
+  /* macOS menu bar */
+  #menubar {
+    position: absolute; left: 0; right: 0; top: 0; height: 30px;
+    background: rgba(255,255,255,0.20);
+    backdrop-filter: blur(14px);
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 16px;
+    font-size: 13px; font-weight: 600; color: #fff;
+    z-index: 1;
+  }
+  #menubar .sp { margin-left: auto; display: flex; gap: 14px; font-weight: 500; opacity: 0.94; }
+
+  /* desktop windows, behind him */
+  .win {
+    position: absolute;
+    background: #FCFCFE;
+    border-radius: 11px;
+    box-shadow: 0 20px 44px rgba(26, 22, 54, 0.30), 0 2px 6px rgba(26,22,54,0.16);
+    overflow: hidden;
+    z-index: 1;
+  }
+  .win .bar { height: 31px; background: #ECECF0; display: flex; align-items: center; gap: 6px; padding: 0 11px; border-bottom: 1px solid #DFDFE5; }
+  .win .bar i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .win .bar span { margin-left: 8px; font-size: 12px; font-weight: 600; color: #83838F; }
+  .win .body { padding: 13px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .win .l { height: 8px; border-radius: 4px; background: #E2E3EA; }
+  .win .l.a { background: #CFD3E4; }
+  .win .l.b { background: #E8DCC9; }
+
+  /* the pointer, drawn because a headless screencast has no real cursor */
+  #cursor {
+    position: absolute; left: 0; top: 0;
+    width: 22px; height: 30px;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 260ms ease;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.38));
+  }
+  #cursor.on { opacity: 1; }
+  #cursor.press { transform-origin: 4px 3px; }
+
+  /* Tort sits above the windows. That is the whole product. */
+  #pet { z-index: 40; }
+  #bubble { z-index: 41; }
+  #leafTray { z-index: 42; }
+  #leafGhost { z-index: 43; }
+</style>
+</head>
+<body>
+
+<div id="laptop">
+  <div id="lid">
+    <div id="notch"></div>
+
+    <!-- Tort's world. Ids and structure match the real web build exactly. -->
+    <div id="stage">
+      <div id="menubar">
+        <span style="font-weight:700">Finder</span><span>File</span><span>Edit</span><span>View</span>
+        <span class="sp"><span>100%</span><span>Fri 9:41</span></span>
+      </div>
+
+      <div class="win" style="left: 49px; top: 73px; width: 386px; height: 272px;">
+        <div class="bar"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i><span>notes</span></div>
+        <div class="body">
+          <span class="l a" style="width:56%"></span>
+          <span class="l" style="width:88%"></span>
+          <span class="l" style="width:74%"></span>
+          <span class="l" style="width:91%"></span>
+          <span class="l" style="width:47%"></span>
+          <span class="l b" style="width:66%"></span>
+          <span class="l" style="width:82%"></span>
+        </div>
+      </div>
+
+      <div class="win" style="right: 44px; top: 150px; width: 417px; height: 314px;">
+        <div class="bar"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i><span>reading</span></div>
+        <div class="body">
+          <span class="l" style="width:92%"></span>
+          <span class="l" style="width:78%"></span>
+          <span class="l a" style="width:61%"></span>
+          <span class="l" style="width:86%"></span>
+          <span class="l" style="width:70%"></span>
+          <span class="l" style="width:94%"></span>
+          <span class="l b" style="width:52%"></span>
+          <span class="l" style="width:80%"></span>
+        </div>
+      </div>
+
+      <!-- Tort. Exactly the structure pet-web.js expects. -->
+      <div id="pet" data-state="idle">
+        <div id="bubble" aria-hidden="true"></div>
+        <div id="sprite"></div>
+        <div id="leaf"></div>
+        <div id="water"></div>
+        <div id="bubbles"></div>
+        <div id="hearts"></div>
+      </div>
+      <div id="leafTray" title="feed him"></div>
+      <div id="leafGhost"></div>
+
+      <svg id="cursor" viewBox="0 0 22 30" aria-hidden="true">
+        <path d="M3 2 L3 23.2 L8.4 18.1 L11.9 26.4 L15.4 24.9 L12 16.8 L19.2 16.4 Z"
+              fill="#fff" stroke="#16161A" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div id="chinmark">MacBook Pro</div>
+  </div>
+</div>
+
+<!-- The demo page's controls. Off canvas, but live: the recorder presses them. -->
+<div class="offstage">
+  <button id="btn-come">come here</button>
+  <button id="btn-speak">say something</button>
+  <div id="demo-rewards">
+    <button data-tier="water">30 min</button>
+    <button data-tier="fed">60 min</button>
+    <button data-tier="clean">2 hr</button>
+  </div>
+</div>
+
+<script>
+  /* Deterministic takes. pet-web.js picks lines, blink gaps and crawl targets
+     with Math.random, so a recording would differ every run and could not be
+     re-cut. Seed it before the module loads and every render is identical. */
+  (function seedRandom () {
+    // ?seed=N overrides, so the crawl distance in the walk beat can be
+    // searched for a take that fits the cut (see probe.mjs).
+    const q = new URLSearchParams(location.search).get('seed');
+    let s = q ? (parseInt(q, 10) | 0) : 60606;
+    Math.random = function () {
+      s |= 0; s = (s + 0x6D2B79F5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  })();
+
+  /* A fixed clock so the 09:00 / 13:00 / 18:00 affirmation slots never fire
+     mid take and steal a beat. The recorder triggers the line it wants. */
+  (function freezeAffirmations () {
+    try { localStorage.setItem('tort-state', JSON.stringify({
+      day: `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`,
+      care: { petted: false, studied: false, walked: false, done: false },
+      lastCaredAt: 0,
+      affirmedToday: ['09:00', '13:00', '18:00']
+    })); } catch (e) {}
+  })();
+
+  /* ---------- helpers the recorder drives ---------- */
+
+  const cursorEl = () => document.getElementById('cursor');
+  const stageEl = () => document.getElementById('stage');
+
+  function rectOf (sel) {
+    const r = document.querySelector(sel).getBoundingClientRect();
+    return { x: r.left, y: r.top, w: r.width, h: r.height, cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+  }
+
+  // Page coordinates of everything the recorder needs to aim at.
+  window.rects = () => ({
+    screen: rectOf('#stage'),
+    pet: rectOf('#pet'),
+    tray: rectOf('#leafTray')
+  });
+
+  // The drawn pointer is positioned inside #stage, so page coords come in and
+  // stage-relative coords go out.
+  window.cursorAt = (px, py) => {
+    const s = stageEl().getBoundingClientRect();
+    cursorEl().style.transform = `translate(${px - s.left}px, ${py - s.top}px)`;
+  };
+  window.cursorShow = (on) => cursorEl().classList.toggle('on', !!on);
+
+  /* The drawn pointer rides the real event stream rather than being animated
+     on its own clock, so it can never drift out of sync with the drag it is
+     supposed to be performing. */
+  window.addEventListener('mousemove', (e) => window.cursorAt(e.clientX, e.clientY), true);
+  window.addEventListener('mousedown', () => { cursorEl().style.scale = '0.86'; }, true);
+  window.addEventListener('mouseup', () => { cursorEl().style.scale = '1'; }, true);
+
+  window.pressButton = (id) => { document.getElementById(id).click(); return 'ok'; };
+  window.pressTier = (tier) => { document.querySelector(`#demo-rewards button[data-tier="${tier}"]`).click(); return 'ok'; };
+
+  window.stageReady = () => !!document.querySelector('#sprite svg');
+</script>
+
+<script type="module" src="/pet-web.js"></script>
+</body>
+</html>
