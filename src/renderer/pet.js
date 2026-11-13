@@ -156,7 +156,10 @@ function celebrate () {
   wake()
   markCare('petted')
   setMode('happy')
-  say(pick(ON_CLICK), 2600)
+  // He does not talk over himself. If a bubble is already up (his hello, an
+  // affirmation), a pet just gets the hearts and stays quiet, which reads far
+  // more like an animal than a character with a line for every touch.
+  if (!el.bubble.classList.contains('show')) say(pick(ON_CLICK), 2600)
   for (let i = 0; i < 4; i++) {
     const heart = document.createElement('span')
     heart.className = 'heart'
@@ -413,7 +416,7 @@ el.pet.addEventListener('mousedown', (e) => {
   document.body.style.cursor = 'grabbing'
 })
 
-let lastClickAt = 0
+let clickTimer = null
 const DOUBLE_CLICK_MS = 320
 
 window.addEventListener('mouseup', () => {
@@ -427,14 +430,16 @@ window.addEventListener('mouseup', () => {
   }
   // A double-click hides him for a screenshot. Bring him back with
   // Ctrl+Alt+P or the tray menu, same as waking from a snooze.
-  const now = Date.now()
-  if (now - lastClickAt < DOUBLE_CLICK_MS) {
-    lastClickAt = 0
+  // It is "hide him", not "pet him twice", so the single-click reaction waits
+  // out the double-click window rather than firing straight away. Without this
+  // he throws hearts and says a line on his way out.
+  if (clickTimer) {
+    clearTimeout(clickTimer)
+    clickTimer = null
     window.pet.hide()
     return
   }
-  lastClickAt = now
-  celebrate() // a single click
+  clickTimer = setTimeout(() => { clickTimer = null; celebrate() }, DOUBLE_CLICK_MS)
 })
 
 /* ---------- feed by dragging the leaf onto him ---------- */
